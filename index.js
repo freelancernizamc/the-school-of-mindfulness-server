@@ -44,6 +44,7 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         const usersCollection = client.db("mindfulnessDB").collection("users");
+        const instractorsCollection = client.db("mindfulnessDB").collection("instractors");
         // Connect the client to the server	(optional starting in v4.7)
 
 
@@ -72,6 +73,26 @@ async function run() {
             const result = await usersCollection.insertOne(user);
             res.send(result);
         });
+
+
+        // menu related apis
+        app.get('/instractors', async (req, res) => {
+            const result = await instractorsCollection.find().toArray();
+            res.send(result);
+        })
+
+        app.post('/instractors', verifyJWT, async (req, res) => {
+            const newInstractor = req.body;
+            const result = await instractorsCollection.insertOne(newInstractor)
+            res.send(result);
+        })
+
+        app.delete('/instractors/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await instractorsCollection.deleteOne(query);
+            res.send(result);
+        })
 
 
         await client.connect();
