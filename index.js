@@ -45,6 +45,7 @@ async function run() {
     try {
         const usersCollection = client.db("mindfulnessDB").collection("users");
         const instractorsCollection = client.db("mindfulnessDB").collection("instractors");
+        const classesCollection = client.db("mindfulnessDB").collection("classes");
         // Connect the client to the server	(optional starting in v4.7)
 
 
@@ -75,11 +76,17 @@ async function run() {
         });
 
 
-        // menu related apis
+        // instractors  apis
         app.get('/instractors', async (req, res) => {
             const result = await instractorsCollection.find().toArray();
             res.send(result);
         })
+
+        app.get('/top-instractors', async (req, res) => {
+            const limit = req.query.limit ? parseInt(req.query.limit) : 6;
+            const result = await instractorsCollection.find().limit(limit).toArray();
+            res.send(result);
+        });
 
         app.post('/instractors', verifyJWT, async (req, res) => {
             const newInstractor = req.body;
@@ -93,6 +100,18 @@ async function run() {
             const result = await instractorsCollection.deleteOne(query);
             res.send(result);
         })
+
+        // classes  apis
+        app.get('/classes', async (req, res) => {
+            const result = await classesCollection.find().toArray();
+            res.send(result);
+        })
+
+        app.get('/top-classes', async (req, res) => {
+            const limit = req.query.limit ? parseInt(req.query.limit) : 6;
+            const result = await classesCollection.find().limit(limit).toArray();
+            res.send(result);
+        });
 
 
         await client.connect();
