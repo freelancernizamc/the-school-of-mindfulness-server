@@ -56,8 +56,18 @@ async function run() {
             res.send({ token })
         })
 
+        const verifyAdmin = async (req, res, next) => {
+            const email = req.decoded.email;
+            const query = { email: email }
+            const user = await usersCollection.findOne(query);
+            if (user?.role !== 'admin') {
+                return res.status(403).send({ error: true, message: 'forbidden message' });
+            }
+            next();
+        }
+
         // users related apis
-        app.get('/users', verifyJWT, async (req, res) => {
+        app.get('/users', verifyJWT, verifyAdmin, async (req, res) => {
             const result = await usersCollection.find().toArray();
             res.send(result);
         });
@@ -99,6 +109,38 @@ async function run() {
             const query = { _id: new ObjectId(id) }
             const result = await instractorsCollection.deleteOne(query);
             res.send(result);
+        })
+
+        // admin api
+        app.get('/users/admin/:email', verifyJWT, async (req, res) => {
+            // console.log('admin');
+            const email = req.params.email;
+            console.log(email);
+
+            if (req.decoded.email !== email) {
+                return res.send({ admin: false })
+                console.log('!admin')
+            }
+
+            const query = { email: email }
+            const user = await usersCollection.findOne(query);
+            const result = { admin: user?.role === 'admin' }
+            res.send(result);
+        })
+
+        app.patch('/users/admin/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log(id);
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    role: 'admin'
+                },
+            };
+
+            const result = await usersCollection.updateOne(filter, updateDoc);
+            res.send(result);
+
         })
 
         // classes  apis
