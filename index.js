@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 5000;
@@ -46,6 +46,7 @@ async function run() {
         const usersCollection = client.db("mindfulnessDB").collection("users");
         const instractorsCollection = client.db("mindfulnessDB").collection("instractors");
         const classesCollection = client.db("mindfulnessDB").collection("classes");
+        const selectedClassesCollection = client.db("mindfulnessDB").collection("selectedClasses");
         // Connect the client to the server	(optional starting in v4.7)
 
 
@@ -67,7 +68,7 @@ async function run() {
         }
 
         // users related apis
-        app.get('/users', verifyJWT, verifyAdmin, async (req, res) => {
+        app.get('/users', async (req, res) => {
             const result = await usersCollection.find().toArray();
             res.send(result);
         });
@@ -98,22 +99,54 @@ async function run() {
             res.send(result);
         });
 
-        app.post('/instractors', verifyJWT, async (req, res) => {
+        app.get('/user/instractor/:email', verifyJWT, async (req, res) => {
+            console.log('instractor');
+            const email = req.params.email;
+            console.log(email);
+
+            if (req.decoded.email !== email) {
+                return res.send({ instractor: false })
+                console.log('!instractor')
+            }
+
+            const query = { email: email }
+            const user = await instractorsCollection.findOne(query);
+            const result = { instractor: user?.role === 'instractor' }
+            res.send(result);
+        })
+
+
+        app.post('/instractors', async (req, res) => {
             const newInstractor = req.body;
             const result = await instractorsCollection.insertOne(newInstractor)
             res.send(result);
         })
 
-        app.delete('/instractors/:id', verifyJWT, async (req, res) => {
+        app.patch('/users/instractor/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log(id);
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    role: 'instractor'
+                },
+            };
+
+            const result = await usersCollection.updateOne(filter, updateDoc);
+            res.send(result);
+
+        })
+
+        app.delete('/users/:id', verifyJWT, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
-            const result = await instractorsCollection.deleteOne(query);
+            const result = await usersCollection.deleteOne(query);
             res.send(result);
         })
 
         // admin api
         app.get('/users/admin/:email', verifyJWT, async (req, res) => {
-            // console.log('admin');
+            console.log('admin');
             const email = req.params.email;
             console.log(email);
 
@@ -128,7 +161,30 @@ async function run() {
             res.send(result);
         })
 
-        app.patch('/users/admin/:id', async (req, res) => {
+        // cart collection apis
+        app.post('/selectedClasses', async (req, res) => {
+            const email = req.query.email;
+
+            if (!email) {
+                res.send([]);
+            }
+
+            const decodedEmail = req.decoded.email;
+            if (email !== decodedEmail) {
+                return res.status(403).send({ error: true, message: 'forbidden access' })
+            }
+
+            const query = { email: email };
+            const result = await selectedClassesCollection.find(query).toArray();
+            res.send(result);
+        });
+
+        app.get('/selectedClasses', async (req, res) => {
+            const result = await selectedClassesCollection.find().toArray();
+            res.send(result);
+        })
+
+        app.patch('/users/admin/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
             console.log(id);
             const filter = { _id: new ObjectId(id) };
@@ -156,7 +212,9 @@ async function run() {
         });
 
 
-        await client.connect();
+
+
+        // await client.connect();
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
