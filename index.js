@@ -76,7 +76,7 @@ async function run() {
         }
 
         // users related apis
-        app.get('/users', async (req, res) => {
+        app.get('/users', verifyJWT, async (req, res) => {
             const result = await usersCollection.find().toArray();
             res.send(result);
         });
@@ -96,7 +96,7 @@ async function run() {
 
 
         // instractors  apis
-        app.get('/instractors', async (req, res) => {
+        app.get('/instractors', verifyJWT, async (req, res) => {
             const result = await instractorsCollection.find().toArray();
             res.send(result);
         })
@@ -141,6 +141,38 @@ async function run() {
             res.send(result);
         })
 
+        app.get('/users/instractor/:id', async (req, res) => {
+            const id = req.params.id;
+
+            try {
+                const instructor = await instractorsCollection.findOne({ _id: new ObjectId(id) });
+                if (!instructor) {
+                    return res.status(404).json({ error: true, message: 'Instructor not found' });
+                }
+
+                res.json(instructor);
+            } catch (error) {
+                console.error(error);
+                res.status(500).json({ error: true, message: 'Server error' });
+            }
+        });
+
+
+
+        app.get('/instructors/:instructorId/classes', verifyJWT, async (req, res) => {
+            const instructorId = req.params.instructorId;
+
+            try {
+                const classes = await classesCollection.find({ instructorId: instructorId }).toArray();
+                res.json(classes);
+            } catch (error) {
+                console.error(error);
+                res.status(500).json({ error: true, message: 'Server error' });
+            }
+        });
+
+
+
 
 
         app.post('/instractors', async (req, res) => {
@@ -149,7 +181,7 @@ async function run() {
             res.send(result);
         })
 
-        app.patch('/users/instractor/:id', async (req, res) => {
+        app.patch('/users/instractor/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
             console.log(id);
             const filter = { _id: new ObjectId(id) };
@@ -189,7 +221,7 @@ async function run() {
         })
 
         // cart collection apis
-        app.post('/selectedClasses', async (req, res) => {
+        app.post('/selectedClasses', verifyJWT, async (req, res) => {
             const email = req.query.email;
 
             if (!email) {
