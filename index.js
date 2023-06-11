@@ -3,6 +3,7 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
+const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
 const app = express();
 const port = process.env.PORT || 5000;
 
@@ -12,20 +13,27 @@ app.use(express.json());
 
 const verifyJWT = (req, res, next) => {
     const authorization = req.headers.authorization;
+
     if (!authorization) {
-        return res.status(401).send({ error: true, message: 'unauthorized access' });
+        return res.status(401).send({ error: true, message: 'Unauthorized access' });
     }
-    // bearer token
+
     const token = authorization.split(' ')[1];
 
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
         if (err) {
-            return res.status(401).send({ error: true, message: 'unauthorized access' });
+            return res.status(401).send({ error: true, message: 'Invalid token' });
         }
+
+        if (!decoded.email) {
+            return res.status(401).send({ error: true, message: 'Invalid token payload' });
+        }
+
         req.decoded = decoded;
         next();
-    })
-}
+    });
+};
+
 
 
 
@@ -114,6 +122,25 @@ async function run() {
             const result = { instractor: user?.role === 'instractor' }
             res.send(result);
         })
+
+
+
+        app.get('/user/student/:email', verifyJWT, async (req, res) => {
+            console.log('student');
+            const email = req.params.email;
+            console.log(email);
+
+            if (req.decoded.email !== email) {
+                return res.send({ student: false })
+                console.log('!student')
+            }
+
+            const query = { email: email }
+            const user = await usersCollection.findOne(query);
+            const result = { student: user?.role === 'student' }
+            res.send(result);
+        })
+
 
 
         app.post('/instractors', async (req, res) => {
