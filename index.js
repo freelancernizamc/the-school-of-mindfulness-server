@@ -76,7 +76,7 @@ async function run() {
         }
 
         // users related apis
-        app.get('/users', verifyJWT, async (req, res) => {
+        app.get('/users', async (req, res) => {
             const result = await usersCollection.find().toArray();
             res.send(result);
         });
@@ -96,7 +96,7 @@ async function run() {
 
 
         // instractors  apis
-        app.get('/instractors', verifyJWT, async (req, res) => {
+        app.get('/instractors', async (req, res) => {
             const result = await instractorsCollection.find().toArray();
             res.send(result);
         })
@@ -110,15 +110,16 @@ async function run() {
         app.get('/user/instractor/:email', verifyJWT, async (req, res) => {
             console.log('instractor');
             const email = req.params.email;
-            console.log(email);
+            // console.log(email);
 
             if (req.decoded.email !== email) {
                 return res.send({ instractor: false })
-                console.log('!instractor')
+                // console.log('!instractor')
             }
 
             const query = { email: email }
-            const user = await instractorsCollection.findOne(query);
+            const user = await usersCollection.findOne(query);
+            console.log('instractor', user);
             const result = { instractor: user?.role === 'instractor' }
             res.send(result);
         })
@@ -137,6 +138,7 @@ async function run() {
 
             const query = { email: email }
             const user = await usersCollection.findOne(query);
+            console.log(user);
             const result = { student: user?.role === 'student' }
             res.send(result);
         })
@@ -159,7 +161,7 @@ async function run() {
 
 
 
-        app.get('/instructors/:instructorId/classes', verifyJWT, async (req, res) => {
+        app.get('/instructors/:instructorId/classes', async (req, res) => {
             const instructorId = req.params.instructorId;
 
             try {
@@ -181,7 +183,7 @@ async function run() {
             res.send(result);
         })
 
-        app.patch('/users/instractor/:id', verifyJWT, async (req, res) => {
+        app.patch('/users/instractor/:id', async (req, res) => {
             const id = req.params.id;
             console.log(id);
             const filter = { _id: new ObjectId(id) };
@@ -243,7 +245,7 @@ async function run() {
             res.send(result);
         })
 
-        app.patch('/users/admin/:id', verifyJWT, async (req, res) => {
+        app.patch('/users/admin/:id', verifyJWT, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             console.log(id);
             const filter = { _id: new ObjectId(id) };
