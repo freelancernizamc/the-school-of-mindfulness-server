@@ -1,14 +1,19 @@
 const express = require('express');
+const app = express();
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 
 require('dotenv').config();
 const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
-const app = express();
 const port = process.env.PORT || 5000;
 
 // middleware
-app.use(cors());
+const corsOptions = {
+    origin: '*',
+    credentials: true,
+    optionSuccessStatus: 200,
+}
+app.use(cors(corsOptions))
 app.use(express.json());
 
 const verifyJWT = (req, res, next) => {
@@ -198,7 +203,7 @@ async function run() {
 
         })
 
-        app.delete('/users/:id', verifyJWT, async (req, res) => {
+        app.delete('/users/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await usersCollection.deleteOne(query);
@@ -245,7 +250,7 @@ async function run() {
             res.send(result);
         })
 
-        app.patch('/users/admin/:id', verifyJWT, verifyAdmin, async (req, res) => {
+        app.patch('/users/admin/:id', async (req, res) => {
             const id = req.params.id;
             console.log(id);
             const filter = { _id: new ObjectId(id) };
