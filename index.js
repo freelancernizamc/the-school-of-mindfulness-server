@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+
 require('dotenv').config();
 const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
 const app = express();
@@ -35,7 +35,7 @@ const verifyJWT = (req, res, next) => {
 };
 
 
-
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.vweq3se.mongodb.net/?retryWrites=true&w=majority`;
@@ -198,7 +198,7 @@ async function run() {
 
         })
 
-        app.delete('/users/:id', verifyJWT, verifyAdmin, async (req, res) => {
+        app.delete('/users/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await usersCollection.deleteOne(query);
